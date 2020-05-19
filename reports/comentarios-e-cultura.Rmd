@@ -1,23 +1,44 @@
 ---
-title: "Comentários e cultura"
+title: "Lab 3.2: Explorando marcas e canais - Comentários e cultura"
+author: 'Arthur Felipe Thamay'
+date: "16/05/2020"
 output:
-    html_document:
+  html_document:
     df_print: paged
-theme: sandstone
+    theme: sandstone
+    code_folding: "hide"
+    font-family: Roboto
 ---
 
 ```{r echo=FALSE, message=FALSE, warning=FALSE}
 library(tidyverse)
 library(here)
+library(lubridate)
+library(ggbeeswarm)
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(tidyr)
+library(scales)
 library(viridis)
-source(here::here("code/lib.R"))
+library(plotly)
+library(hrbrthemes)
+library(DT)
+source(here::here("code/import_data.R"))
 theme_set(theme_bw())
+
 knitr::opts_chunk$set(tidy = FALSE,
                       fig.width = 6,
                       fig.height = 5)
 ```
 
-```{r read}
+
+```{r include = FALSE}
+knitr::opts_chunk$set(echo=FALSE)
+```
+
+
+```{r read, echo=TRUE}
 dados = read_csv(
     here::here("data/participation-per-country.csv"),
     col_types = cols(
@@ -43,9 +64,223 @@ Considerando essa variável, queremos examinar a relação entre ela e o quão h
 
 Faça uma visualização que usa os princípios de eficácia no projeto de visualizações para facilitar as comparações que você acha que são as mais importantes para entendermos esse contexto. 
 
+```{r, echo=TRUE}
+v1 <- dados %>%
+  na.omit() %>%
+  filter(!is.na(six_regions)) %>% 
+    ggplot(aes(
+        x = reorder(PDI, comentaram_prop), 
+        y = comentaram_prop,
+        fill = six_regions, 
+        size = log10(usuarios),
+        PDI = PDI,
+        Site = site,
+        color = Internet,
+        Usuarios = usuarios,
+        Pais = country
+    )) +
+  scale_fill_discrete(
+    name=""
+    ) +
+  scale_size_continuous(
+    name ="", 
+    range = c(1, 6)
+    ) +
+  scale_color_continuous(
+    name ="Internet", 
+    type = "viridis"
+    ) +
+  geom_point(
+    alpha = .6
+    ) +
+    labs(
+        x = "Índice de Distância de poder/hierarquia",
+        y = "Proporção de usuários que comentaram",
+        title = "Relação de usuários que comentaram questões no StackOverflow e Superuser",
+        caption = "Relação entre comentários, PDI, internet e usuários para cada site"
+    )
+ggplotly(v1, 
+         height=500, 
+         width=900,
+         tooltip = c(
+           "PDI", 
+           "comentaram_prop", 
+           "Site", 
+           "Internet", 
+           "Usuarios", 
+           "Pais"
+           )
+         )
+
+
+```
+
+
+```{r echo=TRUE}
+totalUsers <- dados %>% 
+  na.omit() %>% 
+  filter(six_regions == 'europe_central_asia') %>% 
+  summarise(soma = sum(usuarios))
+datatable(head(totalUsers))
+```
+
+
+O sucesso dos sites de Perguntas e Respostas online (Q&A) se baseiam nas contribuições dos usuários.
+Uma das formas de encontrar a relação entre quanto as pessoas de diferentes países comentam em sites de Q&A e a proporção das pessoas do país, é plotando um gráfico de dispersão contendo as variáveis "internet" e "usuário" para diferentes países e continentes.
+A visualização por seis regiões dá o indicativo de quais regiões interagem com maior frequência, devido a incidência de um número maior de pontos relacionados. De acordo com o gráfico, estima-se que a Europa central possui o maior número de usuários (139719) que comentam nos sites(Stackoverflow e SuperUser), enquanto que os pontos marcados por esferas menores, indicam que as regiões tem um número de usuários menor. Isso indica que na África, por exemplo, o volume de comentários é menor, pois o número de usuários também é menor. Também é possível observar a frequência de comentários por site. Conclui-se que esta visualização carrega uma grande quantidade de informações, podendo relacionar diversas variáveis.
+A relação entre o PDI (Índice de Distância de poder/hierarquia, onde quanto menor esse índice, menor a distância entre as pessoas de diferentes níveis, ou seja, maior a relação/interação entre elas) dos países e a proporção das pessoas que comentam indica que um número alto ou baixo de comentários não está necessariamente ligado à interação.
+A cor de contorno varia de acordo com a taxa de penetração da internet, dando o indicativo das regiões que atingem um maior percentual de utilização.
+O número de comentários pode ser baixo devido a um número pequeno de usuários ou acesso à internet, que pode ser medida como a taxa de penetração. Dado que a participação em ambientes online requerem acesso à Internet, a porcentagem de contribuidores deve aumentar com a taxa de penetração na Internet do país. A maneira mais eficaz de obter informações em um gráfico é relacionando as 4 variáveis simultaneamente. As variáveis dependentes e independentes nos eixos de coordenadas e as variáveis correlatas em legendas de cor e tamanho. Essa representação consegue diferenciar casos em que a quantidade de comentários sofre interferência direta de fatores externos (usuários e internet). A visualização é a opção mais rica, no que diz respeito a informações que podem ser extraídas do gráfico.
+
+
+
+
 ## Outras formas de ver
 
 Em seguida, faça 5 visualizações que usem as mesmas variáveis e também pontos, mas que sejam **menos eficazes** que a que você escolheu acima. 
+
+```{r, fig.height=6, fig.width=10, echo=TRUE}
+
+v1 <- dados %>%
+  na.omit() %>%
+  filter(!is.na(six_regions)) %>% 
+    ggplot(aes(
+        x = reorder(PDI, comentaram_prop), 
+        y = comentaram_prop,
+        color = six_regions,
+        size = log10(usuarios),
+    )) +
+    geom_point(
+      alpha = .6
+      ) + 
+    facet_grid(
+      site ~ ., 
+      scales = "free_y"
+      ) +
+    labs(
+        x = "Índice de Distância de poder/hierarquia",
+        y = "Proporção de usuários que comentaram",
+        title = "Relação de usuários que comentaram questões no StackOverflow e Superuser",
+        caption = "Relação entre comentários, PDI, internet e usuários para cada site"
+    )
+v1
+
+v2 <- dados %>%
+  na.omit() %>%
+  filter(!is.na(six_regions)) %>% 
+    ggplot(aes(
+        x = reorder(PDI, comentaram_prop), 
+        y = comentaram_prop,
+        color = six_regions,
+        size = log10(usuarios),
+        shape = site
+    )) +
+    scale_shape_discrete(
+      name ="Site", 
+      breaks=c("StackOverflow", "SuperUser")
+      ) +
+    scale_size_continuous(
+      name ="Usuários", 
+      range = c(1, 6)
+      ) +
+    geom_point(
+      alpha = .6
+      ) +
+    labs(
+        x = "Índice de Distância de poder/hierarquia",
+        y = "Proporção de usuários que comentaram",
+        title = "Relação de usuários que comentaram questões no StackOverflow e Superuser",
+        caption = "Relação entre comentários, PDI, internet e usuários para cada site"
+    )
+v2
+
+v3 <- dados %>%
+  na.omit() %>%
+  filter(!is.na(six_regions)) %>% 
+    ggplot(aes(
+        x = reorder(PDI, comentaram_prop), 
+        y = comentaram_prop,
+        size = log10(usuarios), 
+        shape = site
+    )) +
+    scale_shape_discrete(
+      name ="Site", 
+      breaks=c("StackOverflow", "SuperUser")
+      ) +
+    scale_size_continuous(
+      name ="Usuários", 
+      range = c(1, 6)) +
+    geom_point(
+      alpha=0.7, 
+      color="black", 
+      stroke=0.3
+      ) +
+    labs(
+        x = "Índice de Distância de poder/hierarquia",
+        y = "Proporção de usuários que comentaram",
+        title = "Relação de usuários que comentaram questões no StackOverflow e Superuser",
+        caption = "Relação entre comentários, PDI, internet e usuários para cada site"
+    )
+v3
+
+v4 <- dados %>%
+  na.omit() %>%
+  filter(!is.na(six_regions)) %>% 
+    ggplot(aes(
+        x = reorder(PDI, comentaram_prop), 
+        y = comentaram_prop,
+        color = six_regions,
+        size = log10(usuarios),
+        shape = site
+    )) +
+    scale_shape_discrete(
+      name ="Site", 
+      breaks=c("StackOverflow", "SuperUser")
+      ) +
+    scale_size_continuous(
+      name ="Usuários"
+      ) +
+    geom_point() +
+    labs(
+        x = "Índice de Distância de poder/hierarquia",
+        y = "Proporção de usuários que comentaram",
+        title = "Relação de usuários que comentaram questões no StackOverflow e Superuser",
+        caption = "Relação entre comentários, PDI, internet e usuários para cada site"
+    )
+v4
+
+v5 <- dados %>%
+  na.omit() %>%
+  filter(!is.na(six_regions)) %>% 
+    ggplot(aes(
+      x = reorder(PDI, comentaram_prop), 
+      y = comentaram_prop)) +
+    geom_jitter(width = .1, alpha = .2) +
+    geom_point(
+        color = "orange",
+        shape = 15,
+        size = 3
+    ) +
+    labs(
+        x = "Índice de Distância de poder/hierarquia",
+        y = "Proporção de usuários que comentaram",
+        title = "Relação de usuários que comentaram questões no StackOverflow e Superuser",
+        caption = "Relação entre comentários e PDI"
+    )
+v5
+
+```
+
+**VISUALIZAÇÃO 1:** A separação das visualizações em duas caixas não é muito eficaz pois há uma dificuldade na leitura das informações quando precisamos fazer comparações entre os sites. Outro fator a ser considerado também é que a falta de continuidade no eixo vertical também prejudica a leitura.
+
+**VISUALIZAÇÃO 2:** A visualização é rica em termos da quantidade de informações e da relação entre as variáveis, porém, esse tipo de visualização sem uma biblioteca específica, como a plotly, perde eficácia, deixando os dados estáticos.
+
+**VISUALIZAÇÃO 3:** Esta visualização é semelhante a 2, porém, é monocromática, o que dificulta a distinção dos pontos e a interpretação dos dados.
+
+**VISUALIZAÇÃO 4:** Esta visualização é semelhante a 2, além de trazer os problemas citados na ultima, traz as cores de forma sólida, que em alguns dados acabam se confundindo.
+
+**VISUALIZAÇÃO 5:** O gráfico aponta a relação entre PDI e "comentaram_prop", porém, deixa a desejar em informações complementares e é necessário que se conheça os fatores de "internet" e "usuários" para uma interpretação mais conclusiva.
+
 
 ## Bônus
 
